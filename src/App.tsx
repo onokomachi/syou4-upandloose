@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  pages, questions, kanjiList, structure, contrastChips,
+  pages, questions, kanjiList, structure, contrastChips, rubyMap,
   Kanji, Paragraph, ContrastChip
 } from './data';
 
@@ -14,9 +14,15 @@ type Mode = 'read' | 'quiz' | 'kanji' | 'structure' | 'contrast';
 type Cell = 'up-know' | 'up-unknow' | 'loose-know' | 'loose-unknow';
 
 const SECTION_COLOR: Record<Paragraph['section'], string> = {
-  jo: 'border-teal-400 bg-teal-50',
-  hon: 'border-stone-300 bg-white',
-  ketsu: 'border-teal-400 bg-teal-50',
+  hajime: 'border-teal-400 bg-teal-50',
+  naka: 'border-stone-300 bg-white',
+  owari: 'border-teal-400 bg-teal-50',
+};
+
+const SECTION_LABEL: Record<Paragraph['section'], string> = {
+  hajime: '初め',
+  naka: '中',
+  owari: '終わり',
 };
 
 const CONTRAST_SIDE_COLOR: Record<NonNullable<Paragraph['contrast']>['side'], string> = {
@@ -45,6 +51,9 @@ export default function App() {
   // Structure mode
   const [expandedPara, setExpandedPara] = useState<number | null>(null);
   const [pulsePara, setPulsePara] = useState<number | null>(null);
+
+  // Read mode (paragraph stepper)
+  const [readParaNum, setReadParaNum] = useState<number>(1);
 
   // Contrast table mode
   const [placedChips, setPlacedChips] = useState<Record<Cell, number[]>>({
@@ -78,6 +87,14 @@ export default function App() {
     setSelectedKanji(null);
     setCurrentQuestionIndex(0);
     setCustomSelection(null);
+    // 「読む」モードでページがかわったら、現在のだん落がそのページにない場合だけ最初のだん落に合わせる
+    if (mode === 'read') {
+      const currentPara = structure.find(p => p.num === readParaNum);
+      if (!currentPara || currentPara.pageId !== pages[currentPageIndex].id) {
+        const firstPara = structure.find(p => p.pageId === pages[currentPageIndex].id);
+        if (firstPara) setReadParaNum(firstPara.num);
+      }
+    }
   }, [currentPageIndex, mode]);
 
   useEffect(() => {
@@ -168,6 +185,29 @@ export default function App() {
       setCurrentPageIndex(pages.findIndex(pg => pg.id === p.pageId));
     }
     setPulsePara(p.num);
+    setTimeout(() => setPulsePara(null), 1200);
+  };
+
+  // Read mode: get current paragraph and its body
+  const readPara = structure.find(p => p.num === readParaNum) ?? structure[0];
+  const readParaBody = (() => {
+    const targetPage = pages.find(pg => pg.id === readPara.pageId);
+    if (!targetPage) return '';
+    const paragraphsOnPage = structure.filter(p => p.pageId === readPara.pageId);
+    const idxInPage = paragraphsOnPage.findIndex(p => p.num === readPara.num);
+    const segments = targetPage.text.split('\n');
+    return segments[idxInPage] ?? '';
+  })();
+
+  const handleStepRead = (delta: 1 | -1) => {
+    const next = readParaNum + delta;
+    if (next < 1 || next > structure.length) return;
+    const nextPara = structure.find(p => p.num === next)!;
+    setReadParaNum(next);
+    if (nextPara.pageId !== currentPage.id) {
+      setCurrentPageIndex(pages.findIndex(pg => pg.id === nextPara.pageId));
+    }
+    setPulsePara(next);
     setTimeout(() => setPulsePara(null), 1200);
   };
 
@@ -284,7 +324,9 @@ export default function App() {
         }
       };
 
-      return (
+      const ruby = rubyMap[char];
+
+      const inner = (
         <span
           key={index}
           data-index={index}
@@ -295,6 +337,16 @@ export default function App() {
           {char}
         </span>
       );
+
+      if (ruby) {
+        return (
+          <ruby key={index} className="ruby-wrapper">
+            {inner}
+            <rt className="text-[0.5em] text-stone-500 font-normal">{ruby}</rt>
+          </ruby>
+        );
+      }
+      return inner;
     });
   };
 
@@ -411,20 +463,71 @@ export default function App() {
               className="flex-1 bg-white rounded-2xl shadow-sm border border-stone-200 p-6 flex flex-col overflow-y-auto"
             >
               {mode === 'read' && (
-                <div className="flex-1 flex flex-col items-center justify-center text-center text-stone-500 gap-4">
-                  <Camera size={64} className="text-teal-200" />
-                  <h2 className="text-2xl font-bold text-stone-700">説明文を読もう</h2>
-                  <p>左の文章を読んで、筆者が「アップ」と「ルーズ」をどう説明しているかをつかもう。<br />読み終わったら「問題」「構成マップ」「対比表」で理解を深めてね。</p>
-                  <div className="mt-4 grid grid-cols-2 gap-3 w-full max-w-xs">
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-700 text-sm">
-                      <ZoomIn className="mx-auto mb-1" size={20} />
-                      <div className="font-bold">アップ</div>
-                      <div className="text-xs">細かい部分を大きく</div>
+                <div className="flex-1 flex flex-col">
+                  <div className="flex justify-between items-center mb-4 pb-4 border-b border-teal-100">
+                    <h2 className="text-xl font-bold text-teal-600 flex items-center gap-2">
+                      <BookOpen /> だん落ごとに読もう
+                    </h2>
+                    <span className="text-xs text-teal-700 font-bold bg-teal-50 border border-teal-200 px-3 py-1 rounded-full">
+                      {readParaNum} / {structure.length}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                      readPara.section === 'hajime' ? 'bg-teal-500 text-white'
+                        : readPara.section === 'owari' ? 'bg-teal-500 text-white'
+                        : readPara.contrast?.side === 'up' ? 'bg-amber-500 text-white'
+                        : readPara.contrast?.side === 'loose' ? 'bg-sky-500 text-white'
+                        : 'bg-stone-500 text-white'
+                    }`}>
+                      {readPara.section === 'hajime' ? SECTION_LABEL.hajime
+                        : readPara.section === 'owari' ? SECTION_LABEL.owari
+                        : readPara.contrast?.side === 'up' ? 'アップ'
+                        : readPara.contrast?.side === 'loose' ? 'ルーズ'
+                        : SECTION_LABEL.naka}
+                    </span>
+                    <span className="text-sm font-bold text-stone-700">¶{readPara.num}　{readPara.role}</span>
+                  </div>
+
+                  <div className="flex-1 bg-stone-50 rounded-2xl border border-stone-200 p-5 overflow-y-auto leading-loose text-lg text-stone-800 font-serif">
+                    {Array.from(readParaBody).map((ch, i) => {
+                      const r = rubyMap[ch];
+                      if (r) {
+                        return (
+                          <ruby key={i}>
+                            {ch}
+                            <rt className="text-[0.5em] text-stone-500 font-normal">{r}</rt>
+                          </ruby>
+                        );
+                      }
+                      return <span key={i}>{ch}</span>;
+                    })}
+                  </div>
+
+                  <div className="mt-4 flex justify-between items-center">
+                    <button
+                      onClick={() => handleStepRead(-1)}
+                      disabled={readParaNum === 1}
+                      className="flex items-center gap-1 px-4 py-2 bg-white border border-teal-200 rounded-full text-teal-700 font-bold disabled:opacity-30 hover:bg-teal-50"
+                    >
+                      <ChevronLeft size={18} /> 前のだん落
+                    </button>
+                    <button
+                      onClick={() => handleStepRead(1)}
+                      disabled={readParaNum === structure.length}
+                      className="flex items-center gap-1 px-4 py-2 bg-teal-500 text-white rounded-full font-bold disabled:opacity-30 hover:bg-teal-600"
+                    >
+                      次のだん落 <ChevronRight size={18} />
+                    </button>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-2 text-amber-700">
+                      <ZoomIn className="inline" size={14} /> <span className="font-bold">アップ</span>=細かい部分を大きく
                     </div>
-                    <div className="bg-sky-50 border border-sky-200 rounded-xl p-3 text-sky-700 text-sm">
-                      <Maximize2 className="mx-auto mb-1" size={20} />
-                      <div className="font-bold">ルーズ</div>
-                      <div className="text-xs">広いはんいを写す</div>
+                    <div className="bg-sky-50 border border-sky-200 rounded-xl p-2 text-sky-700">
+                      <Maximize2 className="inline" size={14} /> <span className="font-bold">ルーズ</span>=広いはんい
                     </div>
                   </div>
                 </div>
@@ -599,27 +702,27 @@ export default function App() {
                     <h2 className="text-xl font-bold text-teal-600 flex items-center gap-2">
                       <Layers /> 文章の組み立てマップ
                     </h2>
-                    <span className="bg-teal-100 text-teal-700 px-3 py-1 rounded-full text-xs font-bold">双括型</span>
+                    <span className="bg-teal-100 text-teal-700 px-3 py-1 rounded-full text-xs font-bold">初め・中・終わり</span>
                   </div>
                   <p className="text-stone-600 mb-4 text-sm">
-                    8つの段落の役割を確かめよう。カードをタップすると、左の本文の段落へジャンプするよ。
-                    <span className="text-teal-700 font-bold">序論・結論</span>はティール、<span className="text-amber-600 font-bold">アップの段</span>はアンバー、<span className="text-sky-600 font-bold">ルーズの段</span>はスカイで色分けされているよ。
+                    8つのだん落のはたらきを見てみよう。カードをタップすると、左の本文のだん落へジャンプするよ。
+                    <span className="text-teal-700 font-bold">初め・終わり</span>はティール、<span className="text-amber-600 font-bold">アップのだん落</span>はアンバー、<span className="text-sky-600 font-bold">ルーズのだん落</span>はスカイで色分けされているよ。
                   </p>
                   <div className="flex flex-col gap-3">
                     {structure.map(p => {
                       const isAmber = p.contrast?.side === 'up';
                       const isSky = p.contrast?.side === 'loose';
-                      const tone = p.section !== 'hon'
+                      const tone = p.section !== 'naka'
                         ? SECTION_COLOR[p.section]
                         : isAmber ? CONTRAST_SIDE_COLOR.up
                         : isSky ? CONTRAST_SIDE_COLOR.loose
                         : 'border-stone-300 bg-white';
                       const sectionBadge =
-                        p.section === 'jo' ? { label: '序論', cls: 'bg-teal-500 text-white' }
-                        : p.section === 'ketsu' ? { label: '結論', cls: 'bg-teal-500 text-white' }
+                        p.section === 'hajime' ? { label: SECTION_LABEL.hajime, cls: 'bg-teal-500 text-white' }
+                        : p.section === 'owari' ? { label: SECTION_LABEL.owari, cls: 'bg-teal-500 text-white' }
                         : isAmber ? { label: 'アップ', cls: 'bg-amber-500 text-white' }
                         : isSky ? { label: 'ルーズ', cls: 'bg-sky-500 text-white' }
-                        : { label: '本論', cls: 'bg-stone-500 text-white' };
+                        : { label: SECTION_LABEL.naka, cls: 'bg-stone-500 text-white' };
                       const isExpanded = expandedPara === p.num;
                       return (
                         <button
