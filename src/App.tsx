@@ -598,44 +598,44 @@ export default function App() {
       </AnimatePresence>
 
       {/* Header */}
-      <header className="bg-white shadow-sm p-4 flex items-center justify-between z-10">
-        <div className="flex items-center gap-4">
-          <button onClick={() => setScreen('title')} className="p-2 rounded-xl hover:bg-stone-100 transition-colors text-stone-500" aria-label="タイトルへ">
-            <Home size={22} />
+      <header className="bg-white shadow-sm px-3 py-2 flex items-center justify-between z-10 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <button onClick={() => setScreen('title')} className="p-1.5 rounded-lg hover:bg-stone-100 transition-colors text-stone-500 shrink-0" aria-label="タイトルへ">
+            <Home size={20} />
           </button>
-          <div>
-            <h1 className="text-xl font-bold text-stone-700 flex items-center gap-2">
-              <Camera className="text-blue-500" aria-label="カメラ" />
+          <div className="min-w-0">
+            <h1 className="text-base lg:text-lg font-bold text-stone-700 flex items-center gap-1.5 truncate">
+              <Camera className="text-blue-500 shrink-0" size={18} aria-label="カメラ" />
               アップとルーズで伝える
             </h1>
-            <p className="text-xs text-stone-500 ml-7">中谷 日出 ／ 光村図書 4年上</p>
+            <p className="text-[10px] text-stone-500 ml-6 truncate">中谷 日出 ／ 光村図書 4年上</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full font-bold shadow-sm border border-blue-200 text-sm">
-              <Star className="fill-blue-400 text-blue-400" size={16} />
-              <span>{solvedQuestions.length} / {questions.length}問</span>
+          <div className="flex items-center gap-1.5 ml-1 shrink-0">
+            <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-bold border border-blue-200 text-xs">
+              <Star className="fill-blue-400 text-blue-400" size={12} />
+              <span>{solvedQuestions.length}/{questions.length}</span>
             </div>
             {streak > 0 && (
-              <div className="flex items-center gap-1 text-orange-600 text-sm font-bold">
-                <Flame size={16} className="text-orange-500" />
+              <div className="flex items-center gap-0.5 text-orange-600 text-xs font-bold">
+                <Flame size={12} className="text-orange-500" />
                 <span>{streak}日</span>
               </div>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {reviewMode && (
-            <div className="flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full text-sm font-bold border border-amber-200">
-              <RotateCcw size={14} />
-              ふりかえり {reviewIdx + 1}/{reviewQueue.length}
+            <div className="flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-xs font-bold border border-amber-200">
+              <RotateCcw size={12} />
+              {reviewIdx + 1}/{reviewQueue.length}
             </div>
           )}
-          <div className="flex gap-1 bg-stone-100 p-1 rounded-xl">
-            <ModeButton active={mode === 'read'} onClick={() => { setReviewMode(false); setMode('read'); }} icon={<BookOpen size={18} />} label="読む" color="teal" />
-            <ModeButton active={mode === 'quiz' || reviewMode} onClick={() => { setReviewMode(false); setMode('quiz'); }} icon={<HelpCircle size={18} />} label="問題" color="amber" />
-            <ModeButton active={mode === 'kanji'} onClick={() => { setReviewMode(false); setMode('kanji'); }} icon={<PenTool size={18} />} label="漢字" color="indigo" />
-            <ModeButton active={mode === 'structure'} onClick={() => { setReviewMode(false); setMode('structure'); }} icon={<Layers size={18} />} label="構成マップ" color="teal" />
-            <ModeButton active={mode === 'contrast'} onClick={() => { setReviewMode(false); setMode('contrast'); }} icon={<GitCompare size={18} />} label="対比表" color="sky" />
+          <div className="flex gap-0.5 bg-stone-100 p-0.5 rounded-lg">
+            <ModeButton active={mode === 'read'} onClick={() => { setReviewMode(false); setMode('read'); }} icon={<BookOpen size={16} />} label="読む" color="teal" />
+            <ModeButton active={mode === 'quiz' || reviewMode} onClick={() => { setReviewMode(false); setMode('quiz'); }} icon={<HelpCircle size={16} />} label="問題" color="amber" />
+            <ModeButton active={mode === 'kanji'} onClick={() => { setReviewMode(false); setMode('kanji'); }} icon={<PenTool size={16} />} label="漢字" color="indigo" />
+            <ModeButton active={mode === 'structure'} onClick={() => { setReviewMode(false); setMode('structure'); }} icon={<Layers size={16} />} label="構成" color="teal" />
+            <ModeButton active={mode === 'contrast'} onClick={() => { setReviewMode(false); setMode('contrast'); }} icon={<GitCompare size={16} />} label="対比" color="sky" />
           </div>
         </div>
       </header>
@@ -644,18 +644,18 @@ export default function App() {
       <main className="flex-1 flex overflow-hidden">
 
         {/* Left: Text Viewer */}
-        <div className="w-3/5 bg-white m-4 rounded-2xl shadow-sm border border-stone-200 flex flex-col relative">
-          <div className="absolute top-4 left-4 text-stone-400 font-medium z-10">
+        <div className="w-3/5 bg-white m-2 rounded-2xl shadow-sm border border-stone-200 flex flex-col relative">
+          <div className="absolute top-2 left-3 text-stone-400 font-medium text-sm z-10">
             p.{displayPage.pageNumber}
           </div>
-          <div className="absolute top-4 right-4 text-xs text-teal-600 font-bold bg-teal-50 border border-teal-200 px-3 py-1 rounded-full z-10">
+          <div className="absolute top-2 right-3 text-[10px] text-teal-600 font-bold bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full z-10">
             {displayPage.paragraphRange}
           </div>
 
-          <div className={`flex-1 overflow-x-auto p-8 block ${(mode === 'quiz' || reviewMode) ? 'select-none' : ''}`}>
+          <div className={`flex-1 overflow-x-auto px-5 pt-8 pb-2 block ${(mode === 'quiz' || reviewMode) ? 'select-none' : ''}`}>
             <div
               ref={textContainerRef}
-              className="h-[65vh] text-2xl leading-[2.5] font-serif text-stone-800 ml-auto w-max px-8 cursor-text"
+              className="h-full min-h-[55vh] text-xl leading-[2.3] font-serif text-stone-800 ml-auto w-max px-5 cursor-text"
               style={{ writingMode: 'vertical-rl' }}
               onTouchMove={handleTouchMove}
             >
@@ -663,36 +663,36 @@ export default function App() {
             </div>
           </div>
 
-          <div className="p-4 border-t border-stone-100 flex justify-between items-center bg-stone-50 rounded-b-2xl">
+          <div className="px-3 py-2 border-t border-stone-100 flex justify-between items-center bg-stone-50 rounded-b-2xl">
             <button
               onClick={handleNextPage}
               disabled={currentPageIndex === pages.length - 1}
-              className="flex items-center gap-2 px-6 py-3 bg-white border border-stone-200 rounded-full shadow-sm disabled:opacity-50 hover:bg-stone-100 transition-colors font-bold text-stone-600"
+              className="flex items-center gap-1 px-4 py-2 bg-white border border-stone-200 rounded-full shadow-sm disabled:opacity-50 hover:bg-stone-100 transition-colors font-bold text-stone-600 text-sm"
             >
-              <ChevronLeft /> 次のページ
+              <ChevronLeft size={16} /> 次のページ
             </button>
-            <div className="text-stone-400 font-medium">{currentPageIndex + 1} / {pages.length}</div>
+            <div className="text-stone-400 font-medium text-sm">{currentPageIndex + 1} / {pages.length}</div>
             <button
               onClick={handlePrevPage}
               disabled={currentPageIndex === 0}
-              className="flex items-center gap-2 px-6 py-3 bg-white border border-stone-200 rounded-full shadow-sm disabled:opacity-50 hover:bg-stone-100 transition-colors font-bold text-stone-600"
+              className="flex items-center gap-1 px-4 py-2 bg-white border border-stone-200 rounded-full shadow-sm disabled:opacity-50 hover:bg-stone-100 transition-colors font-bold text-stone-600 text-sm"
             >
-              前のページ <ChevronRight />
+              前のページ <ChevronRight size={16} />
             </button>
           </div>
         </div>
 
         {/* Right: Action Panel */}
-        <div className="w-2/5 m-4 ml-0 flex flex-col gap-4 relative">
-          {/* Floating mascot */}
-          <div className="absolute bottom-4 right-4 z-20 flex flex-col items-end gap-1">
+        <div className="w-2/5 m-2 ml-0 flex flex-col gap-2 relative">
+          {/* Floating mascot — overlays panel content; bubble appears above to avoid pane-edge clipping */}
+          <div className="absolute bottom-2 right-2 z-20 pointer-events-none">
             <div className="relative">
-              <SpeechBubble message={mascotMessage} visible={mascotBubble} position="left" />
+              <SpeechBubble message={mascotMessage} visible={mascotBubble} position="top" />
               <motion.div
                 animate={{ y: [0, -4, 0] }}
                 transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
               >
-                <MascotPinto expression={mascotExpression} size={64} />
+                <MascotPinto expression={mascotExpression} size={56} />
               </motion.div>
             </div>
           </div>
@@ -703,12 +703,12 @@ export default function App() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="flex-1 bg-white rounded-2xl shadow-sm border border-stone-200 p-6 flex flex-col overflow-y-auto"
+              className="flex-1 bg-white rounded-2xl shadow-sm border border-stone-200 p-4 pb-20 flex flex-col overflow-y-auto"
             >
               {/* Review mode panel */}
               {reviewMode && (
                 <div className="flex-1 flex flex-col">
-                  <div className="flex justify-between items-center mb-6 pb-4 border-b border-amber-100">
+                  <div className="flex justify-between items-center mb-3 pb-2 border-b border-amber-100">
                     <h2 className="text-xl font-bold text-amber-600 flex items-center gap-2">
                       <RotateCcw /> ふりかえり問題 {reviewIdx + 1} / {reviewQueue.length}
                     </h2>
@@ -745,7 +745,7 @@ export default function App() {
 
               {!reviewMode && mode === 'read' && (
                 <div className="flex-1 flex flex-col">
-                  <div className="flex justify-between items-center mb-4 pb-4 border-b border-teal-100">
+                  <div className="flex justify-between items-center mb-3 pb-2 border-b border-teal-100">
                     <h2 className="text-xl font-bold text-teal-600 flex items-center gap-2">
                       <BookOpen /> だん落ごとに読もう
                     </h2>
@@ -816,7 +816,7 @@ export default function App() {
 
               {!reviewMode && mode === 'quiz' && (
                 <div className="flex-1 flex flex-col">
-                  <div className="flex justify-between items-center mb-6 pb-4 border-b border-amber-100">
+                  <div className="flex justify-between items-center mb-3 pb-2 border-b border-amber-100">
                     <h2 className="text-xl font-bold text-amber-600 flex items-center gap-2">
                       <HelpCircle /> 問題 {currentQuestionIndex + 1} / {pageQuestions.length}
                     </h2>
@@ -872,7 +872,7 @@ export default function App() {
 
               {!reviewMode && mode === 'kanji' && (
                 <div className="flex-1 flex flex-col">
-                  <h2 className="text-xl font-bold text-indigo-600 flex items-center gap-2 mb-6 pb-4 border-b border-indigo-100">
+                  <h2 className="text-xl font-bold text-indigo-600 flex items-center gap-2 mb-3 pb-2 border-b border-indigo-100">
                     <PenTool /> 新出漢字を学ぼう
                   </h2>
                   <p className="text-stone-600 mb-6">左の文章のインディゴ色の文字をタップすると、漢字の読み方や意味がわかるよ。</p>
@@ -916,7 +916,7 @@ export default function App() {
 
               {!reviewMode && mode === 'structure' && (
                 <div className="flex-1 flex flex-col">
-                  <div className="flex justify-between items-center mb-4 pb-4 border-b border-teal-100">
+                  <div className="flex justify-between items-center mb-3 pb-2 border-b border-teal-100">
                     <h2 className="text-xl font-bold text-teal-600 flex items-center gap-2">
                       <Layers /> 文章の組み立てマップ
                     </h2>
@@ -981,7 +981,7 @@ export default function App() {
 
               {!reviewMode && mode === 'contrast' && (
                 <div className="flex-1 flex flex-col">
-                  <h2 className="text-xl font-bold text-sky-600 flex items-center gap-2 mb-4 pb-4 border-b border-sky-100">
+                  <h2 className="text-xl font-bold text-sky-600 flex items-center gap-2 mb-3 pb-2 border-b border-sky-100">
                     <GitCompare /> アップ ⇄ ルーズ 対比表
                   </h2>
                   <p className="text-stone-600 text-sm mb-4">

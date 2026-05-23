@@ -98,7 +98,7 @@ export function SpeechBubble({ message, visible, position = 'top' }: BubbleProps
           animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
           exit={{ opacity: 0, scale: 0.85 }}
           transition={{ duration: 0.2 }}
-          className="absolute z-20 bg-white border-2 border-blue-200 rounded-2xl px-4 py-3 shadow-lg text-sm font-bold text-blue-800 max-w-[220px] leading-snug"
+          className="absolute z-20 bg-white border-2 border-blue-200 rounded-2xl px-4 py-2.5 shadow-lg text-sm font-bold text-blue-800 leading-snug whitespace-nowrap"
           style={
             position === 'top'
               ? { bottom: '110%', right: '50%', transform: 'translateX(50%)' }
