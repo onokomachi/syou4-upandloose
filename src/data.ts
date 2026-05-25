@@ -96,9 +96,9 @@ export const structure: Paragraph[] = [
     summary: 'カメラがコート中央の選手にズームする「アップ」の場面を見せる。'
   },
   {
-    num: 3, pageId: 2, section: 'naka',
-    role: 'アップとルーズのせつめい（筆者の考え）',
-    summary: '「ルーズ」=広いはんい、「アップ」=ある部分を大きく。何かを伝えるときは選んだり組み合わせたりすることが大切と述べる。'
+    num: 3, pageId: 2, section: 'hajime',
+    role: 'アップ・ルーズの定義と筆者の問いかけ',
+    summary: '「ルーズ」=広いはんい、「アップ」=ある部分を大きく。大切さをのべ、「どんなちがいがあるのでしょう」と読者に問いかける。'
   },
   {
     num: 4, pageId: 2, section: 'naka',
@@ -121,12 +121,12 @@ export const structure: Paragraph[] = [
     }
   },
   {
-    num: 6, pageId: 3, section: 'naka',
+    num: 6, pageId: 3, section: 'owari',
     role: 'まとめ（テレビでの使い分け）',
     summary: '「このように〜」とまとめ、目的に合わせてアップとルーズを切りかえることを述べる。'
   },
   {
-    num: 7, pageId: 4, section: 'naka',
+    num: 7, pageId: 4, section: 'owari',
     role: 'もう一つの例（新聞写真）',
     summary: 'テレビだけでなく新聞写真でも、目的に合わせて使い分け・組み合わせをしている。'
   },
@@ -137,16 +137,18 @@ export const structure: Paragraph[] = [
   }
 ];
 
+// チップのテキストはすべて本文からの抜き出し（第4・第5だん落）
 export const contrastChips: ContrastChip[] = [
-  { id: 1, text: '選手のひたいのあせや口の動き', correctCell: 'up-know' },
-  { id: 2, text: 'ほかの選手やおうえん席の様子', correctCell: 'up-unknow' },
-  { id: 3, text: '会場全体の広がりや一体感', correctCell: 'loose-know' },
-  { id: 4, text: '各選手の顔つきや気持ち', correctCell: 'loose-unknow' },
-  // ダミー
-  { id: 5, text: '試合のルール', correctCell: 'distractor' },
-  { id: 6, text: '監督の作戦', correctCell: 'distractor' },
-  { id: 7, text: 'カメラの台数', correctCell: 'distractor' },
-  { id: 8, text: '会場の天気', correctCell: 'distractor' }
+  // 正解チップ（本文直接抜き出し）
+  { id: 1, text: '全身でよろこびを表しながら走る選手の様子', correctCell: 'up-know' },
+  { id: 2, text: 'うつされていない多くの部分のこと', correctCell: 'up-unknow' },
+  { id: 3, text: '一体となって、勝利をよろこび合っています', correctCell: 'loose-know' },
+  { id: 4, text: '各選手の顔つきや視線、それから感じられる気持ち', correctCell: 'loose-unknow' },
+  // ダミーチップ（本文の別の場面・まとめ部分から）
+  { id: 5, text: '観客席のほぼまんいんの様子', correctCell: 'distractor' },
+  { id: 6, text: 'コートの中央に立つ選手', correctCell: 'distractor' },
+  { id: 7, text: 'カメラを切りかえながら放送すること', correctCell: 'distractor' },
+  { id: 8, text: '目的に合う写真を選ぶこと', correctCell: 'distractor' }
 ];
 
 export const questions: Question[] = [
