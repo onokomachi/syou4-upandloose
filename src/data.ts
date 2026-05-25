@@ -20,6 +20,7 @@ export type Question = {
   sampleAnswer?: string;
   hint: string;   // ヒント①
   hint2?: string; // ヒント②（よりくわしい）
+  charCount?: number; // 文字数指定ぬき出し（指定時は厳密に一致）
 };
 
 export type Kanji = {
@@ -193,6 +194,7 @@ export const questions: Question[] = [
     targetText: 'アップでとると、細かい部分の様子がよく分かります。',
     question: 'アップでとると、どんな様子がよく分かりますか。本文から五字でぬき出しましょう。',
     answer: ['細かい部分'],
+    charCount: 5,
     hint: '第4だん落に「アップでとると、〇〇〇〇〇の様子がよく分かります。」という文があるよ。〇の部分を五字でぬき出そう。',
     hint2: 'ちょうど五字は「細かい部分」だよ。本文の「アップでとると、」の直後にある言葉をさがしてみよう。'
   },
@@ -203,6 +205,7 @@ export const questions: Question[] = [
     targetText: 'ルーズでとると、広いはんいの様子がよく分かります。',
     question: 'ルーズでとると、どんな様子がよく分かりますか。本文から五字でぬき出しましょう。',
     answer: ['広いはんい'],
+    charCount: 5,
     hint: '第5だん落に「ルーズでとると、〇〇〇〇〇の様子がよく分かります。」という文があるよ。〇の部分を五字でぬき出そう。',
     hint2: 'ちょうど五字は「広いはんい」だよ。本文の「ルーズでとると、」の直後にある言葉をさがしてみよう。'
   },
