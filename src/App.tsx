@@ -324,9 +324,23 @@ export default function App() {
       return;
     }
     if (currentQuestion?.type === 'extract' && Array.isArray(currentQuestion.answer)) {
-      const isCorrect = currentQuestion.answer.some(
-        ans => selectedText.includes(ans) || ans.includes(selectedText)
-      );
+      const charCount = currentQuestion.charCount;
+      const isCorrect = currentQuestion.answer.some(ans => {
+        const sel = selectedText;
+        const a = ans.trim();
+        if (charCount) {
+          // 文字数指定問題: 文字数が一致し、かつテキストが一致すること
+          return sel.length === charCount && sel === a;
+        }
+        // 通常のぬき出し: 正解の±20%（最低2文字）のトレランス
+        if (sel === a) return true;
+        const tolerance = Math.max(2, Math.ceil(a.length * 0.2));
+        // 選択が正解の一部（正解の80%以上を選んでいればOK）
+        if (a.includes(sel) && sel.length >= a.length - tolerance) return true;
+        // 選択が正解より少しだけ長い（境界タップのずれ許容）
+        if (sel.includes(a) && sel.length <= a.length + tolerance) return true;
+        return false;
+      });
       setQuizFeedback(isCorrect ? 'correct' : 'incorrect');
       if (isCorrect) {
         recordCorrect(currentQuestion.id);
@@ -357,7 +371,7 @@ export default function App() {
   };
 
   const handleTouchMove = (e: ReactTouchEvent) => {
-    if (!isDragging || mode !== 'quiz') return;
+    if (!isDragging || mode !== 'quiz' || currentQuestion?.charCount) return;
     const touch = e.touches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
     if (element && element.hasAttribute('data-index')) {
@@ -504,17 +518,26 @@ export default function App() {
           return;
         }
         if (mode === 'quiz' || reviewMode) {
-          setIsDragging(true);
-          if (customSelection && customSelection[0] === customSelection[1]) {
-            setCustomSelection([customSelection[0], index]);
+          const charCount = currentQuestion?.charCount;
+          if (charCount) {
+            // 文字数指定: 1タップで charCount 文字分を自動選択
+            const chars2 = Array.from(displayPage.text);
+            const endIndex = Math.min(index + charCount - 1, chars2.length - 1);
+            setCustomSelection([index, endIndex]);
+            setIsDragging(false);
           } else {
-            setCustomSelection([index, index]);
+            setIsDragging(true);
+            if (customSelection && customSelection[0] === customSelection[1]) {
+              setCustomSelection([customSelection[0], index]);
+            } else {
+              setCustomSelection([index, index]);
+            }
           }
         }
       };
 
       const handlePointerEnter = () => {
-        if (isDragging && (mode === 'quiz' || reviewMode)) {
+        if (isDragging && !currentQuestion?.charCount && (mode === 'quiz' || reviewMode)) {
           setCustomSelection(prev => prev ? [prev[0], index] : [index, index]);
         }
       };
@@ -563,6 +586,9 @@ export default function App() {
   if (screen === 'onboarding') {
     return <OnboardingSlides onDone={() => setScreen('learn')} />;
   }
+
+  // ── Selected char count (for QuizBody display) ──────────────────────────────
+  const selectedCharCount = customSelection ? getSelectedText().trim().length : 0;
 
   // ── Quiz panel helper: which question set to show ───────────────────────────
   const quizQuestion = currentQuestion;
@@ -730,6 +756,7 @@ export default function App() {
                     hintText={getHintText()}
                     freeTextAnswer={freeTextAnswer}
                     showSampleAnswer={showSampleAnswer}
+                    selectedCharCount={selectedCharCount}
                     onExtract={handleExtractAnswer}
                     onChoice={handleChoiceAnswer}
                     onFreeTextChange={setFreeTextAnswer}
@@ -840,6 +867,7 @@ export default function App() {
                       hintText={getHintText()}
                       freeTextAnswer={freeTextAnswer}
                       showSampleAnswer={showSampleAnswer}
+                      selectedCharCount={selectedCharCount}
                       onExtract={handleExtractAnswer}
                       onChoice={handleChoiceAnswer}
                       onFreeTextChange={setFreeTextAnswer}
@@ -1059,6 +1087,7 @@ function QuizBody({
   hintText,
   freeTextAnswer,
   showSampleAnswer,
+  selectedCharCount,
   onExtract,
   onChoice,
   onFreeTextChange,
@@ -1072,6 +1101,7 @@ function QuizBody({
   hintText: string;
   freeTextAnswer: string;
   showSampleAnswer: boolean;
+  selectedCharCount: number;
   onExtract: () => void;
   onChoice: (idx: number) => void;
   onFreeTextChange: (v: string) => void;
@@ -1088,11 +1118,39 @@ function QuizBody({
         <div className="flex flex-col gap-4 items-center justify-center">
           <div className="bg-amber-100/50 p-4 rounded-xl text-stone-600 text-center text-sm w-full">
             <p className="font-bold text-amber-700 mb-1">【えらび方】</p>
-            <p>左の文章の、<strong>最初の文字</strong>と<strong>最後の文字</strong>を<br />ポン、ポンとタッチして選んでね。</p>
+            {question.charCount ? (
+              <p>
+                左の文章の<strong>答えが始まる文字を1回タップ</strong>すると、<br />
+                <span className="text-amber-600 font-bold">{question.charCount}文字分</span>が自動で選ばれるよ。
+              </p>
+            ) : (
+              <p>左の文章の、<strong>最初の文字</strong>と<strong>最後の文字</strong>を<br />ポン、ポンとタッチして選んでね。</p>
+            )}
           </div>
+
+          {/* 選択中の文字数バッジ */}
+          {selectedCharCount > 0 && (
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm border-2 ${
+              question.charCount
+                ? selectedCharCount === question.charCount
+                  ? 'bg-green-100 text-green-700 border-green-300'
+                  : 'bg-red-100 text-red-600 border-red-300'
+                : 'bg-amber-100 text-amber-700 border-amber-300'
+            }`}>
+              <span>{selectedCharCount}文字選択中</span>
+              {question.charCount && selectedCharCount !== question.charCount && (
+                <span className="text-xs">（{question.charCount}文字にしてね）</span>
+              )}
+              {question.charCount && selectedCharCount === question.charCount && (
+                <span className="text-xs">✓ ぴったり{question.charCount}文字！</span>
+              )}
+            </div>
+          )}
+
           <button
             onClick={onExtract}
-            className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 px-8 rounded-full shadow-md transition-transform active:scale-95 text-lg w-full max-w-md mt-4"
+            disabled={selectedCharCount === 0}
+            className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 px-8 rounded-full shadow-md transition-transform active:scale-95 text-lg w-full max-w-md disabled:opacity-40"
           >
             選んだ文字で答える
           </button>
