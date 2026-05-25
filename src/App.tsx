@@ -472,8 +472,11 @@ export default function App() {
       }
     }
 
-    return chars.map((char, index) => {
-      if (char === '\n') return <br key={index} />;
+    const paraStarts = new Set<number>([0]);
+    chars.forEach((ch, i) => { if (ch === '\n' && i + 1 < chars.length) paraStarts.add(i + 1); });
+
+    return chars.flatMap((char, index): ReactNode[] => {
+      if (char === '\n') return [<br key={`br-${index}`} />];
 
       const isSelected = customSelection &&
         index >= Math.min(customSelection[0], customSelection[1]) &&
@@ -530,15 +533,16 @@ export default function App() {
         </span>
       );
 
-      if (ruby) {
-        return (
-          <ruby key={index} className="ruby-wrapper">
-            {inner}
-            <rt className="text-[0.5em] text-stone-500 font-normal">{ruby}</rt>
-          </ruby>
-        );
+      const element: ReactNode = ruby ? (
+        <ruby key={index} className="ruby-wrapper">
+          {inner}
+          <rt className="text-[0.5em] text-stone-500 font-normal">{ruby}</rt>
+        </ruby>
+      ) : inner;
+      if (paraStarts.has(index)) {
+        return [<span key={`ind-${index}`} aria-hidden>　</span>, element];
       }
-      return inner;
+      return [element];
     });
   };
 
@@ -772,7 +776,7 @@ export default function App() {
                   </div>
 
                   <div className="flex-1 bg-stone-50 rounded-2xl border border-stone-200 p-5 overflow-y-auto leading-loose text-lg text-stone-800 font-serif">
-                    {Array.from(readParaBody).map((ch, i) => {
+                    {Array.from('　' + readParaBody).map((ch, i) => {
                       const r = rubyMap[ch];
                       if (r) {
                         return (
