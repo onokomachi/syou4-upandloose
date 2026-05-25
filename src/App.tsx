@@ -1080,7 +1080,7 @@ function QuizBody({
 }) {
   return (
     <div className="flex-1 flex flex-col gap-6">
-      <div className="bg-amber-50 p-6 rounded-xl text-lg font-medium text-stone-800 leading-relaxed">
+      <div className="bg-amber-50 p-6 rounded-xl text-lg font-medium text-stone-800 leading-relaxed whitespace-pre-line">
         {question.question}
       </div>
 
