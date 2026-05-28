@@ -8,19 +8,25 @@ interface TitleScreenProps {
   solvedCount: number;
   streak: number;
   reviewCount: number;
+  cycleCount: number;
+  masterCount: number;
+  cycleBadgeInfo: { label: string; cls: string; icon: string };
   onStart: () => void;
   onReview: () => void;
   onShowOnboarding: () => void;
 }
 
-export function TitleScreen({ solvedCount, streak, reviewCount, onStart, onReview, onShowOnboarding }: TitleScreenProps) {
+export function TitleScreen({ solvedCount, streak, reviewCount, cycleCount, masterCount, cycleBadgeInfo, onStart, onReview, onShowOnboarding }: TitleScreenProps) {
   const [bubbleVisible, setBubbleVisible] = useState(true);
   const total = questions.length;
   const progress = total > 0 ? solvedCount / total : 0;
+  const masterRate = total > 0 ? Math.round((masterCount / total) * 100) : 0;
 
   const greeting =
-    solvedCount === 0 ? 'はじめまして！いっしょにがんばろう！'
-    : solvedCount === total ? 'ぜんぶクリア！もういちど挑戦しよう！'
+    cycleCount >= 3 && masterCount === total ? 'マスター完成！すごいね！'
+    : cycleCount >= 2 ? `${cycleCount}周目、いっしょにがんばろう！`
+    : solvedCount === 0 ? 'はじめまして！いっしょにがんばろう！'
+    : solvedCount === total ? 'ぜんぶクリア！次の周にも挑戦しよう！'
     : `のこり${total - solvedCount}問。おうえんしてるよ！`;
 
   return (
@@ -61,10 +67,15 @@ export function TitleScreen({ solvedCount, streak, reviewCount, onStart, onRevie
           <p className="text-xs text-stone-400 mt-2">ピントせんせい</p>
         </div>
 
+        {/* Cycle badge */}
+        <div className={`px-5 py-2 rounded-full font-black text-lg border-2 shadow-sm ${cycleBadgeInfo.cls}`}>
+          {cycleBadgeInfo.icon} {cycleBadgeInfo.label} に挑戦中！
+        </div>
+
         {/* Progress */}
         <div className="w-full bg-stone-100 rounded-2xl p-5 flex flex-col gap-3 shadow-sm border border-stone-200">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-bold text-stone-600">問題クリア</span>
+            <span className="text-sm font-bold text-stone-600">この周のクリア</span>
             <span className="font-black text-blue-600">{solvedCount} / {total}問</span>
           </div>
           <div className="w-full bg-stone-200 rounded-full h-3 overflow-hidden">
@@ -75,8 +86,23 @@ export function TitleScreen({ solvedCount, streak, reviewCount, onStart, onRevie
               transition={{ duration: 0.8, ease: 'easeOut' }}
             />
           </div>
+
+          {/* Mastery progress */}
+          <div className="flex justify-between items-center pt-2 border-t border-stone-200">
+            <span className="text-sm font-bold text-stone-600 flex items-center gap-1">🥇 マスター達成</span>
+            <span className="font-black text-amber-600">{masterCount} / {total}問 ({masterRate}%)</span>
+          </div>
+          <div className="w-full bg-stone-200 rounded-full h-2 overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${masterRate}%` }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+            />
+          </div>
+
           {streak > 0 && (
-            <div className="flex items-center gap-2 text-sm font-bold text-orange-600">
+            <div className="flex items-center gap-2 text-sm font-bold text-orange-600 pt-1">
               <Flame size={16} className="text-orange-500" />
               <span>{streak}日連続学習中！</span>
             </div>
@@ -90,7 +116,9 @@ export function TitleScreen({ solvedCount, streak, reviewCount, onStart, onRevie
             onClick={onStart}
             className="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white font-black text-xl rounded-2xl shadow-md flex items-center justify-center gap-2 transition-colors"
           >
-            {solvedCount > 0 ? 'つづきから学ぶ' : 'はじめる'}
+            {cycleCount >= 2 && solvedCount === 0 ? `${cycleCount}周目をはじめる`
+              : solvedCount > 0 ? 'つづきから学ぶ'
+              : 'はじめる'}
             <ChevronRight size={24} />
           </motion.button>
 

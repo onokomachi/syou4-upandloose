@@ -43,6 +43,22 @@ const CONTRAST_SIDE_COLOR: Record<NonNullable<Paragraph['contrast']>['side'], st
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
+// 周回バッジ: 1=銀 2=金 3=プラチナ 4+=虹
+function cycleBadge(cycle: number): { label: string; cls: string; icon: string } {
+  if (cycle >= 4) return { label: `${cycle}周目`, cls: 'bg-gradient-to-r from-pink-400 via-yellow-400 to-sky-400 text-white border-pink-300', icon: '🌈' };
+  if (cycle === 3) return { label: '3周目', cls: 'bg-gradient-to-r from-slate-200 to-slate-400 text-slate-800 border-slate-300', icon: '💎' };
+  if (cycle === 2) return { label: '2周目', cls: 'bg-gradient-to-r from-amber-300 to-yellow-500 text-amber-900 border-amber-400', icon: '🥇' };
+  return { label: '1周目', cls: 'bg-gradient-to-r from-stone-200 to-stone-300 text-stone-700 border-stone-400', icon: '⭐' };
+}
+
+// 問題ごとのメダル: clearCount(累計周回正解数)に応じて段階表示
+function questionMedal(count: number): { icon: string; label: string; cls: string } {
+  if (count >= 3) return { icon: '🥇', label: `マスター（${count}周正解）`, cls: 'bg-amber-100 text-amber-700 border-amber-300' };
+  if (count === 2) return { icon: '🥈', label: '上達中（2周正解）', cls: 'bg-slate-100 text-slate-700 border-slate-300' };
+  if (count === 1) return { icon: '🥉', label: '挑戦ずみ（1周正解）', cls: 'bg-orange-100 text-orange-700 border-orange-300' };
+  return { icon: '⭐', label: '新規', cls: 'bg-stone-100 text-stone-500 border-stone-300' };
+}
+
 export default function App() {
   // ── Screen routing ──────────────────────────────────────────────────────────
   const [screen, setScreen] = useState<Screen>('title');
@@ -67,7 +83,10 @@ export default function App() {
   const [isDragging, setIsDragging] = useState(false);
 
   const [solvedQuestions, setSolvedQuestions] = useState<number[]>([]);
+  const [clearCount, setClearCount] = useState<Record<number, number>>({});
+  const [cycleCount, setCycleCount] = useState(1);
   const [showAllClear, setShowAllClear] = useState(false);
+  const [showCycleUp, setShowCycleUp] = useState(false);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [quizFeedback, setQuizFeedback] = useState<'correct' | 'incorrect' | null>(null);
@@ -101,6 +120,12 @@ export default function App() {
     const savedSolved = localStorage.getItem('solvedQuestions');
     if (savedSolved) setSolvedQuestions(JSON.parse(savedSolved));
 
+    const savedClearCount = localStorage.getItem('clearCount');
+    if (savedClearCount) setClearCount(JSON.parse(savedClearCount));
+
+    const savedCycle = localStorage.getItem('cycleCount');
+    if (savedCycle) setCycleCount(parseInt(savedCycle, 10));
+
     const savedWrong = localStorage.getItem('wrongLog');
     if (savedWrong) setWrongLog(JSON.parse(savedWrong));
 
@@ -127,6 +152,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('solvedQuestions', JSON.stringify(solvedQuestions));
   }, [solvedQuestions]);
+
+  // ── Persist clearCount & cycleCount ──────────────────────────────────────────
+  useEffect(() => {
+    localStorage.setItem('clearCount', JSON.stringify(clearCount));
+  }, [clearCount]);
+  useEffect(() => {
+    localStorage.setItem('cycleCount', String(cycleCount));
+  }, [cycleCount]);
 
   // ── Persist wrong log ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -179,10 +212,18 @@ export default function App() {
 
   // ── Answer helpers ──────────────────────────────────────────────────────────
   const recordCorrect = (questionId: number) => {
-    if (!solvedQuestions.includes(questionId)) {
+    const isFirstSolveThisCycle = !solvedQuestions.includes(questionId);
+    if (isFirstSolveThisCycle) {
       setSolvedQuestions(prev => [...prev, questionId]);
+      // 周回ごとに1回しかclearCountを増やさない（連続正解で水増しできないように）
+      setClearCount(prev => ({ ...prev, [questionId]: (prev[questionId] ?? 0) + 1 }));
     }
-    showMascot('celebrating', 'すごい！正解！よくできたね！');
+    const newCount = (clearCount[questionId] ?? 0) + (isFirstSolveThisCycle ? 1 : 0);
+    const msg = !isFirstSolveThisCycle ? 'もう一度せいかい！しっかり身についてるね！'
+      : newCount >= 3 ? `すごい！${newCount}周目せいかい！マスターだね！`
+      : newCount === 2 ? 'よくできた！2周目もせいかい！'
+      : 'すごい！正解！よくできたね！';
+    showMascot('celebrating', msg);
   };
 
   const recordWrong = (questionId: number) => {
@@ -571,11 +612,15 @@ export default function App() {
 
   // ── Screen routing ──────────────────────────────────────────────────────────
   if (screen === 'title') {
+    const masterCount = (Object.values(clearCount) as number[]).filter(c => c >= 3).length;
     return (
       <TitleScreen
         solvedCount={solvedQuestions.length}
         streak={streak}
         reviewCount={reviewCount}
+        cycleCount={cycleCount}
+        masterCount={masterCount}
+        cycleBadgeInfo={cycleBadge(cycleCount)}
         onStart={() => setScreen('learn')}
         onReview={handleStartReview}
         onShowOnboarding={() => setScreen('onboarding')}
@@ -609,20 +654,51 @@ export default function App() {
               onClick={e => e.stopPropagation()}
             >
               <MascotPinto expression="celebrating" size={100} />
+              <div className={`px-4 py-1.5 rounded-full font-bold text-sm border-2 ${cycleBadge(cycleCount).cls}`}>
+                {cycleBadge(cycleCount).icon} {cycleBadge(cycleCount).label} クリア！
+              </div>
               <div>
-                <h2 className="text-3xl font-bold text-stone-800 mb-2">全問クリア！</h2>
+                <h2 className="text-3xl font-bold text-stone-800 mb-2">{cycleCount}周目クリア！</h2>
                 <p className="text-stone-600">
-                  すごい！すべての問題を解くことができたね！<br />
-                  「アップとルーズで伝える」の組み立てと、筆者の主張がしっかりつかめたかな？
+                  すごい！この周回の全問題をクリアしたね！<br />
+                  もう一周してマスター（{cycleCount >= 3 ? '4' : '3'}周正解）を目指そう！
                 </p>
               </div>
-              <button
-                onClick={() => setShowAllClear(false)}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-md transition-transform active:scale-95 text-lg w-full"
-              >
-                もどる
-              </button>
+              <div className="w-full flex flex-col gap-3">
+                <button
+                  onClick={() => {
+                    setSolvedQuestions([]);
+                    setCycleCount(c => c + 1);
+                    setShowAllClear(false);
+                    setShowCycleUp(true);
+                    setTimeout(() => setShowCycleUp(false), 2500);
+                  }}
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-8 rounded-full shadow-md transition-transform active:scale-95 text-lg w-full"
+                >
+                  {cycleBadge(cycleCount + 1).icon} {cycleCount + 1}周目に進む！
+                </button>
+                <button
+                  onClick={() => setShowAllClear(false)}
+                  className="bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold py-2 px-8 rounded-full transition-colors text-sm w-full"
+                >
+                  あとで（このまま続ける）
+                </button>
+              </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cycle-up toast */}
+      <AnimatePresence>
+        {showCycleUp && (
+          <motion.div
+            initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50"
+          >
+            <div className={`px-6 py-3 rounded-full font-bold text-lg shadow-lg border-2 ${cycleBadge(cycleCount).cls}`}>
+              {cycleBadge(cycleCount).icon} {cycleBadge(cycleCount).label} スタート！
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -641,6 +717,10 @@ export default function App() {
             <p className="text-[10px] text-stone-500 ml-6 truncate">中谷 日出 ／ 光村図書 4年上</p>
           </div>
           <div className="flex items-center gap-1.5 ml-1 shrink-0">
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-full font-bold border-2 text-xs ${cycleBadge(cycleCount).cls}`} title={`現在 ${cycleBadge(cycleCount).label}`}>
+              <span>{cycleBadge(cycleCount).icon}</span>
+              <span>{cycleBadge(cycleCount).label}</span>
+            </div>
             <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-bold border border-blue-200 text-xs">
               <Star className="fill-blue-400 text-blue-400" size={12} />
               <span>{solvedQuestions.length}/{questions.length}</span>
@@ -742,11 +822,18 @@ export default function App() {
                     <h2 className="text-xl font-bold text-amber-600 flex items-center gap-2">
                       <RotateCcw /> ふりかえり問題 {reviewIdx + 1} / {reviewQueue.length}
                     </h2>
-                    {quizQuestion && solvedQuestions.includes(quizQuestion.id) && (
-                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
-                        <CheckCircle2 size={16} /> クリア済
-                      </span>
-                    )}
+                    {quizQuestion && (() => {
+                      const cnt = clearCount[quizQuestion.id] ?? 0;
+                      const solvedThisCycle = solvedQuestions.includes(quizQuestion.id);
+                      const m = questionMedal(cnt);
+                      if (cnt === 0 && !solvedThisCycle) return null;
+                      return (
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border ${m.cls}`}>
+                          <span className="text-base">{m.icon}</span> {m.label}
+                          {solvedThisCycle && <CheckCircle2 size={14} className="text-green-600" />}
+                        </span>
+                      );
+                    })()}
                   </div>
                   {quizQuestion && <QuizBody
                     question={quizQuestion}
@@ -851,11 +938,18 @@ export default function App() {
                     <h2 className="text-xl font-bold text-amber-600 flex items-center gap-2">
                       <HelpCircle /> 問題 {currentQuestionIndex + 1} / {pageQuestions.length}
                     </h2>
-                    {quizQuestion && solvedQuestions.includes(quizQuestion.id) && (
-                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
-                        <CheckCircle2 size={16} /> クリア済
-                      </span>
-                    )}
+                    {quizQuestion && (() => {
+                      const cnt = clearCount[quizQuestion.id] ?? 0;
+                      const solvedThisCycle = solvedQuestions.includes(quizQuestion.id);
+                      const m = questionMedal(cnt);
+                      if (cnt === 0 && !solvedThisCycle) return null;
+                      return (
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border ${m.cls}`}>
+                          <span className="text-base">{m.icon}</span> {m.label}
+                          {solvedThisCycle && <CheckCircle2 size={14} className="text-green-600" />}
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   {quizQuestion ? (
