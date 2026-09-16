@@ -12,6 +12,7 @@ import {
 import { TitleScreen, OnboardingSlides } from './TitleScreen';
 import { MascotPinto, SpeechBubble } from './Mascot';
 import type { MascotExpression } from './Mascot';
+import { syncToPortal } from './lib/portal';
 
 type Screen = 'title' | 'onboarding' | 'learn';
 type Mode = 'read' | 'quiz' | 'kanji' | 'structure' | 'contrast';
@@ -165,6 +166,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('wrongLog', JSON.stringify(wrongLog));
   }, [wrongLog]);
+
+  // ── 学級ポータルへ送る ───────────────────────────────────────────────────────
+  // 端末への保存が正本で、ここは「先生に届ける」ためだけの副作用。
+  // まとめて数秒後に1回だけ送られるので、状態が変わるたびに呼んでよい。
+  // 環境変数が未設定なら何も起きない（従来どおり端末内だけで動く）。
+  useEffect(() => {
+    syncToPortal(clearCount, wrongLog);
+  }, [clearCount, wrongLog]);
 
   // ── All-clear trigger ────────────────────────────────────────────────────────
   useEffect(() => {
