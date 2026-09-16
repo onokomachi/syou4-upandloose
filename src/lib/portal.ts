@@ -8,7 +8,7 @@
  * 送るのは「どの設問を何回やって何回正解したか」だけ。
  * 本文・解答・氏名は一切送らない。端末の匿名IDしか付かない。
  */
-import { createPusher, type PushRow } from 'learning-app-kit/sync';
+import { createPusher, pushEvents, type PushRow, type EventRow } from 'learning-app-kit/sync';
 
 export const APP_ID = 'upandloose';
 
@@ -61,10 +61,54 @@ export function toRows(
   return rows.sort((a, b) => a.skill_id.localeCompare(b.skill_id));
 }
 
-/** 状態が変わるたびに呼んでよい。まとめて数秒後に1回だけ送られる。 */
+/** 時刻つきの記録1件ぶん（src/lib/history.ts と同じ形） */
+interface HistoryLike {
+  id: string;
+  ts: number;
+  skillId: string;
+  moduleId: string;
+  label: string;
+  correct: boolean;
+  mistakes: number;
+  abandoned?: boolean;
+}
+
+/** どこまで送ったか。成功したときだけ進める（失敗したら次に送り直す） */
+const MARK = 'upandloose_sent_ts_v1';
+const getMark = (): number => {
+  try { const v = Number(localStorage.getItem(MARK)); return Number.isFinite(v) && v > 0 ? v : 0; }
+  catch { return 0; }
+};
+const setMark = (ts: number) => { try { localStorage.setItem(MARK, String(ts)); } catch { /* noop */ } };
+
+const config = {
+  appId: APP_ID,
+  supabaseUrl: env('VITE_SUPABASE_URL'),
+  supabaseKey: env('VITE_SUPABASE_PUBLISHABLE_KEY'),
+};
+
+/**
+ * 状態が変わるたびに呼んでよい。まとめて数秒後に1回だけ送られる。
+ *
+ * 到達状況（どの設問を何回できたか）と、時刻つきの記録（いつ・何回まちがえたか）は
+ * 別々に送る。片方が失敗しても、もう片方は届く。
+ */
 export function syncToPortal(
   clearCount: Record<number, number>,
   wrongLog: readonly WrongEntryLike[],
+  history: readonly HistoryLike[] = [],
 ): void {
   push(toRows(clearCount, wrongLog));
+
+  const since = getMark();
+  const rows: EventRow[] = history
+    .filter((h) => h.ts > since)
+    .sort((a, b) => a.ts - b.ts)
+    .slice(0, 500)
+    .map((h) => ({
+      event_id: h.id, skill_id: h.skillId, module_id: h.moduleId, label: h.label,
+      correct: h.correct, mistakes: h.mistakes, abandoned: !!h.abandoned, ts: h.ts,
+    }));
+  if (rows.length === 0) return;
+  void pushEvents(config, rows).then((r) => { if (r.ok) setMark(rows[rows.length - 1]!.ts); });
 }
