@@ -13,6 +13,7 @@ import { TitleScreen, OnboardingSlides } from './TitleScreen';
 import { MascotPinto, SpeechBubble } from './Mascot';
 import type { MascotExpression } from './Mascot';
 import { syncToPortal } from './lib/portal';
+import { noteCorrect, noteWrong, flushAbandoned, getHistory } from './lib/history';
 
 type Screen = 'title' | 'onboarding' | 'learn';
 type Mode = 'read' | 'quiz' | 'kanji' | 'structure' | 'contrast';
@@ -172,8 +173,20 @@ export default function App() {
   // まとめて数秒後に1回だけ送られるので、状態が変わるたびに呼んでよい。
   // 環境変数が未設定なら何も起きない（従来どおり端末内だけで動く）。
   useEffect(() => {
-    syncToPortal(clearCount, wrongLog);
+    syncToPortal(clearCount, wrongLog, getHistory());
   }, [clearCount, wrongLog]);
+
+  // できないまま別の設問へ移ったら「とちゅうでやめた」として残す。
+  // これが無いと、できなかった問題ほど記録から消える
+  useEffect(() => {
+    flushAbandoned(currentQuestion?.id);
+  }, [currentQuestion?.id]);
+
+  useEffect(() => {
+    const onLeave = () => flushAbandoned();
+    window.addEventListener('pagehide', onLeave);
+    return () => { window.removeEventListener('pagehide', onLeave); onLeave(); };
+  }, []);
 
   // ── All-clear trigger ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -221,6 +234,8 @@ export default function App() {
 
   // ── Answer helpers ──────────────────────────────────────────────────────────
   const recordCorrect = (questionId: number) => {
+    // 時刻つきの記録。まちがえた回数もここで確定する
+    noteCorrect(questionId);
     const isFirstSolveThisCycle = !solvedQuestions.includes(questionId);
     if (isFirstSolveThisCycle) {
       setSolvedQuestions(prev => [...prev, questionId]);
@@ -236,6 +251,8 @@ export default function App() {
   };
 
   const recordWrong = (questionId: number) => {
+    // まだ記録しない。正解したときに「何回まちがえたか」として確定させる
+    noteWrong(questionId);
     const today = todayStr();
     setWrongLog(prev => {
       const existing = prev.find(e => e.questionId === questionId);
