@@ -16,7 +16,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
-    "learning-app-kit": "https://github.com/onokomachi/learning-app-kit/archive/8bd28990f4eb635ed35e87b0e4a2c65a398478c1.tar.gz",
+    "learning-app-kit": "https://github.com/onokomachi/learning-app-kit/archive/3d845839b01d10e9c0f2422e161682f771f506b8.tar.gz",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "react": "^19.0.0",
