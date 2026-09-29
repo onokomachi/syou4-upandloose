@@ -28,6 +28,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
     {/* まだ決めていない子にだけ、はじめの1回だけ出る。断った子には二度と出ない */}
-    <JoinGate config={PORTAL} />
+    {/* あとからの入口はタイトル画面に置いたので、すみの入口は出さない（読む画面のボタンと重なるため） */}
+    <JoinGate config={PORTAL} chip={false} />
   </StrictMode>,
 );

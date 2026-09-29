@@ -2,6 +2,13 @@ import { useState } from 'react';
 import { ChevronRight, ChevronLeft, Flame, BookOpen, Lightbulb, RotateCcw, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MascotPinto, SpeechBubble } from './Mascot';
+import { JoinSettingsRow } from 'learning-app-kit/react';
+
+/** 学級ポータルへの接続。つないでいないアプリでは JoinSettingsRow は何も出さない */
+const PORTAL = {
+  supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+  supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+};
 import { questions } from './data';
 
 interface TitleScreenProps {
@@ -132,6 +139,11 @@ export function TitleScreen({ solvedCount, streak, reviewCount, cycleCount, mast
               ふりかえり問題 ({reviewCount}問)
             </motion.button>
           )}
+
+          {/* がっきゅうコード。はじめの画面で「入れずに つかう」を押した子も、ここから入れられる。入れた子は番号が出る */}
+
+          <JoinSettingsRow config={PORTAL} />
+
 
           <button
             onClick={onShowOnboarding}
