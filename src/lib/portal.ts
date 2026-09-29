@@ -8,7 +8,7 @@
  * 送るのは「どの設問を何回やって何回正解したか」だけ。
  * 本文・解答・氏名は一切送らない。端末の匿名IDしか付かない。
  */
-import { createPusher, pushEvents, type PushRow, type EventRow } from 'learning-app-kit/sync';
+import { createPusher, pushEvents, pairChecker, type PushRow, type EventRow } from 'learning-app-kit/sync';
 
 export const APP_ID = 'upandloose';
 
@@ -101,6 +101,10 @@ export function syncToPortal(
   push(toRows(clearCount, wrongLog));
 
   const since = getMark();
+  // 1台を2人で使っていた時間（kit が「ひとり？ふたり？」で聞いた区間）の記録には印を付ける。
+  // PRISM は印のある記録を、取り組んだ量には数え、正答率・学力の集計からは外す。
+  // kit の toEventRows と同じ扱い。これが無いと、ふたりで解いた分も持ち主の子の実力に数えられる
+  const isPair = pairChecker();
   const rows: EventRow[] = history
     .filter((h) => h.ts > since)
     .sort((a, b) => a.ts - b.ts)
@@ -108,6 +112,7 @@ export function syncToPortal(
     .map((h) => ({
       event_id: h.id, skill_id: h.skillId, module_id: h.moduleId, label: h.label,
       correct: h.correct, mistakes: h.mistakes, abandoned: !!h.abandoned, ts: h.ts,
+      ...(isPair(h.ts) ? { pair: true as const } : {}),
     }));
   if (rows.length === 0) return;
   void pushEvents(config, rows).then((r) => { if (r.ok) setMark(rows[rows.length - 1]!.ts); });
