@@ -1360,7 +1360,7 @@ export default function App() {
                     ))}
                     {CONTRAST.rows.map(r => (
                       <Fragment key={r.key}>
-                        <div className={`flex items-center justify-center text-sm font-bold rounded-lg px-2 ${r.cls}`}>{r.label}</div>
+                        <div className={`flex items-center justify-center text-sm font-bold rounded-lg px-2 text-center whitespace-pre-line ${r.cls}`}>{r.label}</div>
                         {CONTRAST.cols.map(c => (
                           <Fragment key={c.key}>
                             <Cell2x2 cell={`${r.key}-${c.key}`} border={c.border} placed={placedChips} chips={contrastChips} feedback={contrastFeedback} onPlace={handlePlaceChip} />

@@ -6,7 +6,7 @@
  * 問題を足したり直したりしたら、これを走らせて learning-app-kit にコミットし、
  * PRISM とハブの learning-app-kit の版を上げる。
  *
- * 出力先: ../learning-app-kit/src/catalog/gongitsune.ts（となりに kit があるとき）
+ * 出力先: ../learning-app-kit/src/catalog/<appId>.ts（となりに kit があるとき）
  */
 import { writeFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -53,8 +53,8 @@ const body = `/**
  * 自動生成されたカタログ: ${UNIT.title}（国語）
  *
  * 算数の単元アプリと構造が違う（問題ジェネレータではなく data.ts の静的データ）。
- * モジュール＝場面、スキル＝設問として並べている。ラベルに読みの力（ことばの意味・
- * ようす・気持ち・うつりかわり・まとめ）を入れ、誤概念の欄には「読みまちがいの型」を入れている。
+ * モジュール＝${UNIT.sceneWord}、スキル＝設問として並べている。ラベルに読みの力
+ * （${SKILL_ORDER.map(s => SKILLS[s].label).join('・')}）を入れ、誤概念の欄には「読みまちがいの型」を入れている。
  * 手で編集しないこと。アプリ側の data.ts が正本で、
  * \`npm run catalog\` で作り直す。
  */
