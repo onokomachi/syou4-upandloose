@@ -9,8 +9,9 @@
  * 本文・解答・氏名は一切送らない。端末の匿名IDしか付かない。
  */
 import { createPusher, pushEvents, pairChecker, type PushRow, type EventRow } from 'learning-app-kit/sync';
+import { UNIT } from '../unit';
 
-export const APP_ID = 'upandloose';
+export const APP_ID = UNIT.appId;
 
 /**
  * 環境変数を安全に読む。
@@ -74,7 +75,7 @@ interface HistoryLike {
 }
 
 /** どこまで送ったか。成功したときだけ進める（失敗したら次に送り直す） */
-const MARK = 'upandloose_sent_ts_v1';
+const MARK = `${APP_ID}_sent_ts_v1`;
 const getMark = (): number => {
   try { const v = Number(localStorage.getItem(MARK)); return Number.isFinite(v) && v > 0 ? v : 0; }
   catch { return 0; }
