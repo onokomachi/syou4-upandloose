@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 
-export type MascotExpression = 'default' | 'happy' | 'thinking' | 'celebrating' | 'encouraging';
+// serious は「まとめテスト」のときだけの、本気モード（録画ランプが赤く光る）。
+export type MascotExpression = 'default' | 'happy' | 'thinking' | 'celebrating' | 'encouraging' | 'serious';
 
 interface MascotProps {
   expression?: MascotExpression;
@@ -15,7 +16,9 @@ export function MascotPinto({ expression = 'default', size = 80, className = '' 
     thinking:    'M38,74 Q50,72 62,74',
     celebrating: 'M30,68 Q50,84 70,68',
     encouraging: 'M36,71 Q50,79 64,71',
+    serious:     'M40,74 L60,74',
   };
+  const serious = expression === 'serious';
   const showBlush = expression === 'happy' || expression === 'celebrating';
   const armsUp    = expression === 'celebrating';
 
@@ -36,7 +39,7 @@ export function MascotPinto({ expression = 'default', size = 80, className = '' 
 
       {/* Flash */}
       <rect x="62" y="18" width="22" height="13" rx="5" fill="#2563EB" />
-      <circle cx="73" cy="24.5" r="3.5" fill="#93C5FD" />
+      <circle cx="73" cy="24.5" r="3.5" fill={serious ? '#EF4444' : '#93C5FD'} />
 
       {/* Shutter button */}
       <circle cx="15" cy="40" r="4" fill="#60A5FA" />
