@@ -17,6 +17,7 @@ import type { MascotExpression } from './Mascot';
 import { syncToPortal } from './lib/portal';
 import { noteCorrect, noteWrong, flushAbandoned, getHistory } from './lib/history';
 import { forceSolo } from 'learning-app-kit/sync';
+import { MarkStrip, type Mark } from './marks';
 
 type Screen = 'title' | 'onboarding' | 'learn';
 type Mode = 'read' | 'quiz' | 'kanji' | 'structure' | 'contrast';
@@ -172,6 +173,9 @@ export default function App() {
   const [isDragging, setIsDragging] = useState(false);
 
   const [solvedQuestions, setSolvedQuestions] = useState<number[]>([]);
+  // この周の「ねばりクリア」（まちがえたあとに正解）と「ちょうせん中」（まちがえた）。solvedQuestions が一発クリア
+  const [gritQuestions, setGritQuestions] = useState<number[]>([]);
+  const [triedQuestions, setTriedQuestions] = useState<number[]>([]);
   const [clearCount, setClearCount] = useState<Record<number, number>>({});
   const [cycleCount, setCycleCount] = useState(1);
   const [showAllClear, setShowAllClear] = useState(false);
@@ -212,6 +216,11 @@ export default function App() {
   // Active question depends on mode
   const currentPage = pages[currentPageIndex];
   const pageQuestions = questions.filter(q => q.pageId === currentPage.id).sort(bySkill);
+  const markOf = (id: number): Mark =>
+    solvedQuestions.includes(id) ? 'ippatsu'
+    : gritQuestions.includes(id) ? 'nebari'
+    : triedQuestions.includes(id) ? 'trying'
+    : 'none';
   const normalQuestion = pageQuestions[currentQuestionIndex];
   const currentQuestion: Question | undefined = reviewMode ? reviewQueue[reviewIdx] : normalQuestion;
   const isTest = reviewMode && sessionKind === 'test';
@@ -224,6 +233,10 @@ export default function App() {
     const savedSolved = localStorage.getItem('solvedQuestions');
     if (savedSolved) setSolvedQuestions(JSON.parse(savedSolved));
 
+    try {
+      setGritQuestions(JSON.parse(localStorage.getItem('gritQuestions') ?? '[]'));
+      setTriedQuestions(JSON.parse(localStorage.getItem('triedQuestions') ?? '[]'));
+    } catch { /* noop */ }
     const savedClearCount = localStorage.getItem('clearCount');
     if (savedClearCount) setClearCount(JSON.parse(savedClearCount));
 
@@ -256,6 +269,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('solvedQuestions', JSON.stringify(solvedQuestions));
   }, [solvedQuestions]);
+  useEffect(() => {
+    localStorage.setItem('gritQuestions', JSON.stringify(gritQuestions));
+    localStorage.setItem('triedQuestions', JSON.stringify(triedQuestions));
+  }, [gritQuestions, triedQuestions]);
 
   // ── Persist clearCount & cycleCount ──────────────────────────────────────────
   useEffect(() => {
@@ -351,9 +368,14 @@ export default function App() {
     const wrongToday = wrongLog.some(e => e.questionId === questionId && e.lastWrong === today);
     setLateCorrect(wrongToday);
     if (wrongToday) {
-      showMascot('celebrating', 'せいかい！あしたもう一度とこう！');
+      // メダルにはしないが、あきらめずに正解したことは「ねばりクリア」として残す
+      if (!solvedQuestions.includes(questionId)) {
+        setGritQuestions(prev => prev.includes(questionId) ? prev : [...prev, questionId]);
+      }
+      showMascot('celebrating', 'ねばりクリア💪！あした一発で⭐をねらおう！');
       return;
     }
+    const wasGrit = gritQuestions.includes(questionId);
     setWrongLog(prev => prev.map(e => e.questionId === questionId ? { ...e, cleared: today } : e));
     const isFirstSolveThisCycle = !solvedQuestions.includes(questionId);
     if (isFirstSolveThisCycle) {
@@ -365,6 +387,7 @@ export default function App() {
     const sceneDone = !reviewMode && isFirstSolveThisCycle &&
       pageQuestions.every(q => q.id === questionId || solvedQuestions.includes(q.id));
     const msg = sceneDone ? `この${UNIT.sceneWord}の問題、ぜんぶできた！`
+      : wasGrit && isFirstSolveThisCycle ? 'こんどは一発！⭐にレベルアップ！'
       : !isFirstSolveThisCycle ? 'もう一度せいかい！しっかり身についてるね！'
       : newCount >= 3 ? `すごい！${newCount}周目せいかい！マスターだね！`
       : newCount === 2 ? 'よくできた！2周目もせいかい！'
@@ -375,6 +398,7 @@ export default function App() {
   const recordWrong = (questionId: number) => {
     // まだ記録しない。正解したときに「何回まちがえたか」として確定させる
     noteWrong(questionId);
+    setTriedQuestions(prev => prev.includes(questionId) ? prev : [...prev, questionId]);
     const today = todayStr();
     setWrongLog(prev => {
       const existing = prev.find(e => e.questionId === questionId);
@@ -824,6 +848,7 @@ export default function App() {
     return (
       <TitleScreen
         solvedCount={solvedQuestions.length}
+        gritCount={gritQuestions.filter(id => !solvedQuestions.includes(id)).length}
         streak={streak}
         reviewCount={reviewCount}
         cycleCount={cycleCount}
@@ -832,14 +857,14 @@ export default function App() {
         weakSkillLabel={weakSkill ? SKILLS[weakSkill].label : null}
         sceneProgress={pages.map(p => {
           const qs = questions.filter(q => q.pageId === p.id);
-          return { title: p.pageNumber, label: p.paragraphRange, solved: qs.filter(q => solvedQuestions.includes(q.id)).length, total: qs.length };
+          return { title: p.pageNumber, label: p.paragraphRange, solved: qs.filter(q => solvedQuestions.includes(q.id)).length, total: qs.length, marks: [...qs].sort(bySkill).map(q => markOf(q.id)) };
         })}
         onStart={() => { setReviewMode(false); setScreen('learn'); }}
         onStartScene={handleStartScene}
         onStartSkill={handleStartSkill}
         skillProgress={SKILL_ORDER.map(sk => {
           const qs = questions.filter(q => q.skill === sk);
-          return { skill: sk, label: SKILLS[sk].label, desc: SKILLS[sk].desc, solved: qs.filter(q => solvedQuestions.includes(q.id)).length, total: qs.length, weak: sk === weakSkill };
+          return { skill: sk, label: SKILLS[sk].label, desc: SKILLS[sk].desc, solved: qs.filter(q => solvedQuestions.includes(q.id)).length, total: qs.length, weak: sk === weakSkill, marks: qs.map(q => markOf(q.id)) };
         })}
         onStartTest={handleStartTest}
         onReview={handleStartReview}
@@ -903,6 +928,8 @@ export default function App() {
                 <button
                   onClick={() => {
                     setSolvedQuestions([]);
+                    setGritQuestions([]);
+                    setTriedQuestions([]);
                     setCycleCount(c => c + 1);
                     setShowAllClear(false);
                     setShowCycleUp(true);
@@ -957,8 +984,9 @@ export default function App() {
               <span>{cycleBadge(cycleCount).label}</span>
             </div>
             <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-bold border border-blue-200 text-xs">
-              <Star className="fill-blue-400 text-blue-400" size={12} />
-              <span>{solvedQuestions.length}/{questions.length}</span>
+              <span title="一発クリア">⭐{solvedQuestions.length}</span>
+              <span title="ねばりクリア">💪{gritQuestions.filter(id => !solvedQuestions.includes(id)).length}</span>
+              <span className="text-blue-400">/{questions.length}</span>
             </div>
             {streak > 0 && (
               <div className="flex items-center gap-0.5 text-orange-600 text-xs font-bold">
@@ -1190,6 +1218,9 @@ export default function App() {
                       );
                     })()}
                   </div>
+
+                  <MarkStrip marks={pageQuestions.map(q => markOf(q.id))} current={currentQuestionIndex}
+                    onPick={(i) => { if (i !== currentQuestionIndex) { setCurrentQuestionIndex(i); resetQuizUi(); } }} />
 
                   {quizQuestion ? (
                     <QuizBody

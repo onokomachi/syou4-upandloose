@@ -11,12 +11,14 @@ const PORTAL = {
 };
 import { questions, SKILLS, SKILL_ORDER, type Skill } from './data';
 import { UNIT } from './unit';
+import { MarkDots, MarkLegend, type Mark } from './marks';
 
 interface SceneProgress {
   title: string;  // 例: ごんのいたずら
   label: string;  // 例: 場面一
   solved: number;
   total: number;
+  marks: Mark[];
 }
 
 interface SkillProgress {
@@ -26,10 +28,13 @@ interface SkillProgress {
   solved: number;
   total: number;
   weak: boolean;
+  marks: Mark[];
 }
 
 interface TitleScreenProps {
   solvedCount: number;
+  /** ねばりクリア（一発クリアになっていないもの）の数 */
+  gritCount: number;
   streak: number;
   reviewCount: number;
   cycleCount: number;
@@ -52,7 +57,7 @@ interface TitleScreenProps {
 //   ③ まとめテスト（単元の終わり・テスト前に使う）
 //   ④ ふりかえり（まちがえた問題を、次の日以降にもう一度）
 export function TitleScreen({
-  solvedCount, streak, reviewCount, cycleCount, masterCount, cycleBadgeInfo,
+  solvedCount, gritCount, streak, reviewCount, cycleCount, masterCount, cycleBadgeInfo,
   weakSkillLabel, sceneProgress, skillProgress, onStart, onStartScene, onStartSkill, onStartTest, onReview, onShowOnboarding,
 }: TitleScreenProps) {
   const [bubbleVisible, setBubbleVisible] = useState(true);
@@ -103,11 +108,7 @@ export function TitleScreen({
                     {sp.weak && <span className="text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 px-2 py-0.5 rounded-full">まちがいが多い</span>}
                   </div>
                   <div className="text-xs text-stone-500 mt-0.5">{sp.desc}</div>
-                  <div className="flex gap-0.5 mt-2" aria-label={`${sp.total}問中${sp.solved}問できた`}>
-                    {Array.from({ length: sp.total }, (_, k) => (
-                      <span key={k} className={`w-2 h-2 rounded-full ${k < sp.solved ? 'bg-violet-400' : 'bg-stone-200'}`} />
-                    ))}
-                  </div>
+                  <MarkDots marks={sp.marks} />
                 </button>
               ))}
               <button onClick={() => setSkillPicker(false)} className="text-stone-400 hover:text-stone-600 text-sm underline self-center">
@@ -161,15 +162,12 @@ export function TitleScreen({
                 >
                   <div className="text-xs font-bold text-orange-500">{sc.label}</div>
                   <div className="font-bold text-stone-700 text-sm leading-tight">{sc.title}</div>
-                  <div className="flex gap-0.5 mt-2" aria-label={`${sc.total}問中${sc.solved}問できた`}>
-                    {Array.from({ length: sc.total }, (_, k) => (
-                      <span key={k} className={`w-2 h-2 rounded-full ${k < sc.solved ? 'bg-orange-400' : 'bg-stone-200'}`} />
-                    ))}
-                  </div>
+                  <MarkDots marks={sc.marks} />
                 </motion.button>
               );
             })}
           </div>
+          <div className="mt-2"><MarkLegend /></div>
         </div>
 
         {/* ② 身につけたい力でえらぶ（入口は1つ） */}
@@ -226,15 +224,23 @@ export function TitleScreen({
             {cycleBadgeInfo.icon} {cycleBadgeInfo.label}
           </span>
           <div className="flex-1">
-            <div className="w-full bg-stone-200 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-stone-200 rounded-full h-2 overflow-hidden flex">
               <motion.div
-                className="h-full bg-orange-500 rounded-full"
+                className="h-full bg-amber-400"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress * 100}%` }}
                 transition={{ duration: 0.8, ease: 'easeOut' }}
               />
+              <motion.div
+                className="h-full bg-sky-400"
+                initial={{ width: 0 }}
+                animate={{ width: `${total > 0 ? (gritCount / total) * 100 : 0}%` }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+              />
             </div>
-            <div className="text-xs text-stone-500 mt-1">この周のクリア {solvedCount} / {total}問{masterCount > 0 ? `・🥇マスター ${masterCount}問` : ''}</div>
+            <div className="text-xs text-stone-500 mt-1">
+              この周のクリア ⭐一発 {solvedCount}・💪ねばり {gritCount} ／ {total}問{masterCount > 0 ? `・🥇マスター ${masterCount}問` : ''}
+            </div>
           </div>
           {streak > 0 && (
             <span className="flex items-center gap-1 text-xs font-bold text-orange-600 shrink-0">
